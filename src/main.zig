@@ -1,27 +1,24 @@
 const std = @import("std");
-const sokol_game = @import("sokol_game");
+const sokol = @import("sokol");
+const sapp = sokol.app;
+const sglue = sokol.glue;
+const slog = sokol.log;
 
-pub fn main() !void {
-    // Prints to stderr, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-    try sokol_game.bufferedPrint();
-}
+export fn init() void {}
 
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+export fn frame() void {}
 
-test "fuzz example" {
-    const Context = struct {
-        fn testOne(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
-        }
-    };
-    try std.testing.fuzz(Context{}, Context.testOne, .{});
+export fn cleanup() void {}
+
+pub fn main() void {
+    sapp.run(.{
+        .init_cb = init,
+        .frame_cb = frame,
+        .cleanup_cb = cleanup,
+        .width = 640,
+        .height = 480,
+        .icon = .{ .sokol_default = true },
+        .window_title = "triangle.zig",
+        .logger = .{ .func = slog.func },
+    });
 }
