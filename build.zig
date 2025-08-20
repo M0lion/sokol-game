@@ -21,12 +21,12 @@ pub fn build(b: *std.Build) !void {
                 .name = "sokol",
                 .module = dep_sokol.module("sokol"),
             },
-            .{
-                .name = "shader",
-                .module = mod_shader,
-            },
         },
     });
+
+    for (mod_shader) |shader| {
+        root_module.addImport(shader.name, shader.module);
+    }
 
     const exe = b.addExecutable(.{
         .name = "sokol_game",
@@ -50,18 +50,59 @@ pub fn build(b: *std.Build) !void {
     b.step("test", "Run tests").dependOn(&run_tests.step);
 }
 
-fn buildShaders(b: *std.Build, dep_sokol: *std.Build.Dependency) !*std.Build.Module {
+const Shader = struct {
+    name: []const u8,
+    module: *std.Build.Module,
+};
+
+fn buildShaders(b: *std.Build, dep_sokol: *std.Build.Dependency) ![]Shader {
+    const allocator = b.allocator;
+    var shaderFiles = try std.ArrayList([]const u8).initCapacity(allocator, 10);
+    try findShaders(".", &shaderFiles, allocator);
+
     const mod_sokol = dep_sokol.module("sokol");
     const dep_shdc = dep_sokol.builder.dependency("shdc", .{});
-    const mod_shd = try sokol.shdc.createModule(b, "shader", mod_sokol, .{
-        .shdc_dep = dep_shdc,
-        .input = "src/shaders/triangle.glsl",
-        .output = "shader.zig",
-        .slang = .{
-            .glsl430 = true,
-            .hlsl5 = true,
-        },
-    });
 
-    return mod_shd;
+    var modules = try std.ArrayList(Shader).initCapacity(allocator, 1);
+    for (shaderFiles.items) |item| {
+        const stem = std.fs.path.stem(item);
+        const name = try std.fmt.allocPrint(allocator, "shader_{s}", .{stem});
+        const output = try std.fmt.allocPrint(allocator, "{s}.zig", .{name});
+        const module = try sokol.shdc.createModule(b, name, mod_sokol, .{
+            .shdc_dep = dep_shdc,
+            .input = item,
+            .output = output,
+            .slang = .{
+                .glsl430 = true,
+                .hlsl5 = true,
+            },
+        });
+        try modules.append(allocator, .{
+            .module = module,
+            .name = name,
+        });
+    }
+
+    return modules.items;
+}
+
+fn findShaders(path: []const u8, shaderFiles: *std.ArrayList([]const u8), allocator: std.mem.Allocator) !void {
+    var dir = std.fs.cwd().openDir(path, .{ .iterate = true }) catch |err| switch (err) {
+        error.FileNotFound => {
+            std.log.warn("Shaders directory '{s}' not found, creating empty shader module", .{path});
+            return;
+        },
+        else => return err,
+    };
+    defer dir.close();
+
+    var iterator = dir.iterate();
+    while (try iterator.next()) |entry| {
+        const shader_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ path, entry.name });
+        if (entry.kind == .file and std.mem.endsWith(u8, entry.name, ".glsl")) {
+            try shaderFiles.append(allocator, shader_path);
+        } else if (entry.kind == std.fs.File.Kind.directory) {
+            try findShaders(shader_path, shaderFiles, allocator);
+        }
+    }
 }

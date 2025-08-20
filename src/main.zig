@@ -4,7 +4,7 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const sglue = sokol.glue;
 const slog = sokol.log;
-const shd = @import("shader");
+const shd = @import("shader_triangle");
 
 const state = struct {
     var bind: sg.Bindings = .{};
