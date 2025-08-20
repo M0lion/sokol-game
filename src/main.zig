@@ -18,9 +18,9 @@ export fn init() void {
     state.bind.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]f32{
             // positions         colors
-            0.0,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
-            0.5,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
-            -0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
+            0.0,  0.5,  1.0, 0.0, 0.0, 1.0,
+            0.5,  -0.5, 0.0, 1.0, 0.0, 1.0,
+            -0.5, -0.5, 0.0, 0.0, 1.0, 1.0,
         }),
     });
 
@@ -29,7 +29,7 @@ export fn init() void {
         .shader = sg.makeShader(shd.triangleShaderDesc(sg.queryBackend())),
         .layout = init: {
             var l = sg.VertexLayoutState{};
-            l.attrs[shd.ATTR_triangle_position].format = .FLOAT3;
+            l.attrs[shd.ATTR_triangle_position].format = .FLOAT2;
             l.attrs[shd.ATTR_triangle_color0].format = .FLOAT4;
             break :init l;
         },
