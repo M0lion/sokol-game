@@ -1,6 +1,7 @@
 const std = @import("std");
+const sokol = @import("sokol");
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -8,6 +9,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    const mod_shader = try buildShaders(b, dep_sokol);
 
     const root_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
@@ -17,6 +20,10 @@ pub fn build(b: *std.Build) void {
             .{
                 .name = "sokol",
                 .module = dep_sokol.module("sokol"),
+            },
+            .{
+                .name = "shader",
+                .module = mod_shader,
             },
         },
     });
@@ -41,4 +48,20 @@ pub fn build(b: *std.Build) void {
 
     const run_tests = b.addRunArtifact(exe_tests);
     b.step("test", "Run tests").dependOn(&run_tests.step);
+}
+
+fn buildShaders(b: *std.Build, dep_sokol: *std.Build.Dependency) !*std.Build.Module {
+    const mod_sokol = dep_sokol.module("sokol");
+    const dep_shdc = dep_sokol.builder.dependency("shdc", .{});
+    const mod_shd = try sokol.shdc.createModule(b, "shader", mod_sokol, .{
+        .shdc_dep = dep_shdc,
+        .input = "src/shaders/triangle.glsl",
+        .output = "shader.zig",
+        .slang = .{
+            .glsl430 = true,
+            .hlsl5 = true,
+        },
+    });
+
+    return mod_shd;
 }
