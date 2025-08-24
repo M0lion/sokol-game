@@ -5,10 +5,16 @@ const sapp = sokol.app;
 const sglue = sokol.glue;
 const slog = sokol.log;
 const shd = @import("shader_triangle");
+const Vec = @import("math/vector.zig").Vec;
 
 const state = struct {
     var bind: sg.Bindings = .{};
     var pip: sg.Pipeline = .{};
+};
+
+const ColoredVertex = struct {
+    pos: Vec,
+    color: [4]f32,
 };
 
 export fn init() void {
@@ -16,11 +22,13 @@ export fn init() void {
 
     // create vertex buffer with triangle vertices
     state.bind.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&[_]f32{
-            // positions         colors
-            0.0,  0.5,  1.0, 0.0, 0.0, 1.0,
-            0.5,  -0.5, 0.0, 1.0, 0.0, 1.0,
-            -0.5, -0.5, 0.0, 0.0, 1.0, 1.0,
+        .data = sg.asRange(&[_]ColoredVertex{
+            // vertex 0: top, red
+            .{ .pos = .{ .x = 0.0, .y = 0.5 }, .color = .{ 1.0, 0.0, 0.0, 1.0 } },
+            // vertex 1: bottom right, green
+            .{ .pos = .{ .x = 0.5, .y = -0.5 }, .color = .{ 0.0, 1.0, 0.0, 1.0 } },
+            // vertex 2: bottom left, blue
+            .{ .pos = .{ .x = -0.5, .y = -0.5 }, .color = .{ 0.0, 0.0, 1.0, 1.0 } },
         }),
     });
 
