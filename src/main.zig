@@ -6,10 +6,12 @@ const sglue = sokol.glue;
 const slog = sokol.log;
 const shd = @import("shader_triangle");
 const Vec = @import("math/vector.zig").Vec;
+const Transform = @import("math/matrix.zig").Transform2D;
 
 const state = struct {
     var bind: sg.Bindings = .{};
     var pip: sg.Pipeline = .{};
+    var camera: Transform = Transform.identity();
 };
 
 const ColoredVertex = struct {
@@ -48,9 +50,13 @@ export fn frame() void {
     sg.beginPass(.{ .swapchain = sglue.swapchain() });
     sg.applyPipeline(state.pip);
     sg.applyBindings(state.bind);
+    sg.applyUniforms(0, sg.asRange(&state.camera.toMat4()));
+    sg.applyUniforms(1, sg.asRange(&Transform.identity().toMat4()));
     sg.draw(0, 3, 1);
     sg.endPass();
     sg.commit();
+
+    state.camera = state.camera.rotate(0.01);
 }
 
 export fn cleanup() void {
