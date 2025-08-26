@@ -7,56 +7,41 @@ const slog = sokol.log;
 const shd = @import("shader_triangle");
 const Vec = @import("math/vector.zig").Vec;
 const Transform = @import("math/matrix.zig").Transform2D;
+const cv = @import("pipeline/coloredVertex.zig");
 
 const state = struct {
-    var bind: sg.Bindings = .{};
-    var pip: sg.Pipeline = .{};
+    var mesh: cv.ColoredVertexMesh = undefined;
+    var pip: cv.ColoredVertexPipeline = undefined;
     var camera: Transform = Transform.identity();
-};
-
-const ColoredVertex = struct {
-    pos: Vec,
-    color: [4]f32,
+    var x: f32 = 0;
 };
 
 export fn init() void {
     sg.setup(.{ .logger = .{ .func = slog.func }, .environment = sglue.environment() });
 
+    state.pip = .init();
     // create vertex buffer with triangle vertices
-    state.bind.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&[_]ColoredVertex{
-            // vertex 0: top, red
-            .{ .pos = .{ .x = 0.0, .y = 0.5 }, .color = .{ 1.0, 0.0, 0.0, 1.0 } },
-            // vertex 1: bottom right, green
-            .{ .pos = .{ .x = 0.5, .y = -0.5 }, .color = .{ 0.0, 1.0, 0.0, 1.0 } },
-            // vertex 2: bottom left, blue
-            .{ .pos = .{ .x = -0.5, .y = -0.5 }, .color = .{ 0.0, 0.0, 1.0, 1.0 } },
-        }),
-    });
-
-    // create a shader and pipeline object
-    state.pip = sg.makePipeline(.{
-        .shader = sg.makeShader(shd.triangleShaderDesc(sg.queryBackend())),
-        .layout = init: {
-            var l = sg.VertexLayoutState{};
-            l.attrs[shd.ATTR_triangle_position].format = .FLOAT2;
-            l.attrs[shd.ATTR_triangle_color0].format = .FLOAT4;
-            break :init l;
-        },
-    });
+    const data = [_]cv.ColoredVertex{
+        // vertex 0: top, red
+        .{ .pos = .{ .x = 0.0, .y = 0.5 }, .color = .{ 1.0, 0.0, 0.0, 1.0 } },
+        // vertex 1: bottom right, green
+        .{ .pos = .{ .x = 0.5, .y = -0.5 }, .color = .{ 0.0, 1.0, 0.0, 1.0 } },
+        // vertex 2: bottom left, blue
+        .{ .pos = .{ .x = -0.5, .y = -0.5 }, .color = .{ 0.0, 0.0, 1.0, 1.0 } },
+    };
+    const indices = [_]u16{ 0, 1, 2 };
+    state.mesh = cv.ColoredVertexMesh.init(data[0..], indices[0..]);
 }
 
 export fn frame() void {
     sg.beginPass(.{ .swapchain = sglue.swapchain() });
-    sg.applyPipeline(state.pip);
-    sg.applyBindings(state.bind);
-    sg.applyUniforms(0, sg.asRange(&state.camera.toMat4()));
-    sg.applyUniforms(1, sg.asRange(&Transform.identity().toMat4()));
-    sg.draw(0, 3, 1);
+    state.pip.apply(&state.camera);
+    state.mesh.draw(&Transform.scale(std.math.cos(state.x)));
     sg.endPass();
     sg.commit();
 
     state.camera = state.camera.rotate(0.01);
+    state.x += 0.01;
 }
 
 export fn cleanup() void {
