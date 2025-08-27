@@ -8,6 +8,7 @@ const shd = @import("shader_triangle");
 const Vec = @import("math/vector.zig").Vec;
 const Transform = @import("math/matrix.zig").Transform2D;
 const cv = @import("pipeline/coloredVertex.zig");
+const parts = @import("ships/parts.zig");
 
 const state = struct {
     var mesh: cv.ColoredVertexMesh = undefined;
@@ -21,16 +22,13 @@ export fn init() void {
 
     state.pip = .init();
     // create vertex buffer with triangle vertices
-    const data = [_]cv.ColoredVertex{
-        // vertex 0: top, red
-        .{ .pos = .{ .x = 0.0, .y = 0.5 }, .color = .{ 1.0, 0.0, 0.0, 1.0 } },
-        // vertex 1: bottom right, green
-        .{ .pos = .{ .x = 0.5, .y = -0.5 }, .color = .{ 0.0, 1.0, 0.0, 1.0 } },
-        // vertex 2: bottom left, blue
-        .{ .pos = .{ .x = -0.5, .y = -0.5 }, .color = .{ 0.0, 0.0, 1.0, 1.0 } },
+    const ft = parts.fuelTank.FuelTankDescriptor{
+        .widht = 1,
+        .height = 2,
     };
-    const indices = [_]u16{ 0, 1, 2 };
-    state.mesh = cv.ColoredVertexMesh.init(data[0..], indices[0..]);
+    state.mesh = ft.getMesh(std.heap.page_allocator, Transform.identity()) catch {
+        @panic("foo");
+    };
 }
 
 export fn frame() void {
