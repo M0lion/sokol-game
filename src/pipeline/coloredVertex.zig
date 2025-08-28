@@ -3,6 +3,7 @@ const sg = sokol.gfx;
 const shd = @import("shader_triangle");
 const Vec = @import("../math/vector.zig").Vec;
 const Transform = @import("../math/matrix.zig").Transform2D;
+const MeshBuider = @import("../meshBuilder.zig").MeshBuilder(ColoredVertex);
 
 pub const ColoredVertex = struct {
     pos: Vec,
@@ -42,6 +43,10 @@ pub const ColoredVertexMesh = struct {
             .indices_num = index_data.len,
             .bindings = bindings,
         };
+    }
+
+    pub fn fromBuilder(meshBuilder: *const MeshBuider) ColoredVertexMesh {
+        return ColoredVertexMesh.init(meshBuilder.vertices.items, meshBuilder.indices.items);
     }
 
     pub fn draw(self: @This(), transform: *const Transform) void {
