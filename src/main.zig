@@ -6,14 +6,15 @@ const sglue = sokol.glue;
 const slog = sokol.log;
 const shd = @import("shader_triangle");
 const Vec = @import("math/vector.zig").Vec;
-const Transform = @import("math/matrix.zig").Transform2D;
+const Transform = @import("math/matrix.zig").Transform;
 const cv = @import("pipeline/coloredVertex.zig");
+const curves = @import("pipeline/curveVertex.zig");
 const parts = @import("ships/parts.zig");
-const MeshBuilder = @import("meshBuilder.zig").MeshBuilder(cv.ColoredVertex);
+const MeshBuilder = @import("meshBuilder.zig").MeshBuilder(curves.CurveVertex);
 
 const state = struct {
-    var mesh: cv.ColoredVertexMesh = undefined;
-    var pip: cv.ColoredVertexPipeline = undefined;
+    var mesh: curves.CurveVertexMesh = undefined;
+    var pip: curves.CurveVertexPipeline = undefined;
     var camera: Transform = Transform.scale(0.5);
     var x: f32 = 0;
 };
@@ -42,7 +43,7 @@ export fn init() void {
         @panic("failed to build mesh");
     };
 
-    state.mesh = cv.ColoredVertexMesh.fromBuilder(&meshBuilder);
+    state.mesh = curves.CurveVertexMesh.fromBuilder(&meshBuilder);
 }
 
 export fn frame() void {
